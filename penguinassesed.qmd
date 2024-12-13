@@ -1,0 +1,183 @@
+---
+title: "penguinsassesment"
+format: html
+output:
+  html_document: default
+  pdf_document: default
+editor: visual
+---
+
+```{r, echo = FALSE}
+
+#Following code checks if "Renv" package is downloaded, if not it downloads and loads "Renv"
+if (!require("renv")) {install.packages("renv"); require("renv")}
+library(renv)
+#Following code restores packages used, using renv
+
+renv::restore()
+#Following code loads libraries
+library(tidyverse)
+library(palmerpenguins)
+library(janitor)
+library(here)
+library(tinytex)
+library(ggplot2)
+library(ggpubr)
+library(renv)
+```
+
+## Question 1
+
+```{r bad figure code, echo=FALSE}
+#| fig-cap: fig 1.1 "Linear Regression of Pengiun Culem Size"
+
+#Question 1
+cleaning_penguin <- function(raw_data){
+  raw_data %>% 
+    select(-"Comments") %>%
+    select(-starts_with("Delta")) %>%
+    clean_names() %>%
+    na.omit() %>% 
+    remove_empty(c("rows","cols")) %>% 
+    mutate(species = case_when(
+        species == "Adelie Penguin (Pygoscelis adeliae)" ~ "Adelie",
+        species == "Chinstrap penguin (Pygoscelis antarctica)" ~ "Chinstrap",
+        species == "Gentoo penguin (Pygoscelis papua)" ~ "Gentoo"))}
+penguins_cleanQ1 <- cleaning_penguin(penguins_raw)
+
+
+
+#| fig-cap: fig 1.1 "Linear Regression of Pengiun Culem Size"
+
+ggplot(data = penguins_cleanQ1, aes(culmen_length_mm, culmen_depth_mm)) + geom_point(size = 3, col = 'red') + geom_smooth(method='lm') + ggtitle('Culmen Length against Depth with Linear Regression Line') + ylab('Culmen Depth (mm)') + xlab('Culmen Length (mm)')+ ylim(12,40)
+
+```
+
+This graph implies the presence of a negative relationship between culmen depth and length for this data set of Penguins. This is misleading for two reasons, firstly a linear regression was inappropriate for this data as its assumptions were violated, additionally this represents an example of the Yule-Simspon effect; the true correlation within the data has been masked by combining multiple groups.
+
+Heteroscedasticity is present in the sample, this can be confirmed by a Breusch-Pagan test with null hypothesis, H0: heteroscedasticity is not present in the sample, alternate hypothesis, H1: heteroscedasticity is present in the sample. This test gives a p value of 0.00000197, allowing us to reject the null hypothesis at a 95% confidence level. This suggests that heteroscedasticity is likely present in the sample, this makes linear regression a poor choice for analysing this data, as its assumption of However this is misleading, breaking down the analysis by species shows that each individual species shows that each species has a positive correlation between culmen length and depth. The assumption of homoscedasticity has been violated.
+
+While this graph shows a positive correlation breaking down the analysis by species shows that each individual species shows that each species has a positive correlation between culmen length and depth. This is an example of the Yule-Simpson effect, a phenomenon where a data set shows a correlation but this correlation is no longer present or reversed when looking at individual groups within the data (Wang 2021). A potential way of preventing this effect in science is to check for co-variance between variables, especially when large data sets contain multiple subsets, such as different species or countries (Sharma 2022).
+
+The y-axis of this graph has also been expanded, squashing the data together and making the species groups that cluster together less visible and thus harder to visually check for the Yule-Simpson effect.
+
+## Question 2
+
+### Introduction
+
+Here I will be analysing whether correlation is present between the culmen length and depth of Chinstrap Penguins (Pygoscelis antarcticus). The culmen is a ridge found along the top of a birds beak, in penguins the culmen runs across the entire length of the birds beak and thus culmen length is used as a measure of the bird's beak length and culmen depth is measured as the depth of the beak at the from the culmen to the bottom of the lower bill.
+
+Although the three species appear to occupy fairly distinct areas in morphospace (see fig2.1 below) this does not seem to greatly influence their niches, and they all feed on the same prey species when at the same sites. Some studies have suggested their is some niche partitioning in prey size, with Gentoos eating marginally more fish and typically taking larger krill with Chinstraps taking intermediately sized krill and Adelie taking the smallest krill(Volkamn 1980). However it seems most partitioning occurs spatially, with Adelie Penguins foraging in shallow waters (above 15m), Chinstrap Penguins at intermediate depths (between 15m and 60m) and Gentoo Penguins typically foraging at the deepest depths (below 60m) (Wilson 2010). Each species of penguin seems to be physiologically adapted to foraging at the depths, mostly due to their body size with the larger penguins foraging deeper. However some research has suggested that krill my sort themselves with size within the water column by grouping together with other krill that swim at the same speeds (Hamner 1983). It is possible that the three species may sort themselves by depth, in part because different sizes of krill sort themselves by depth as well. Here we revisit the beak morphology of an intermediate species of Pygoscelis, beleiving that the morphology of this species may have some bearing on its diet.
+
+```{r Data Exploration, echo=TRUE}
+#| code-fold:
+#| fig-cap: "fig 2.1 Penguins in Morphospace"
+
+#loading the dataset
+#here(penguins_raw)
+data <- (here("penguins_raw", "penguins_raw.csv"))
+write.csv(penguins_raw, here("data","penguins_raw.csv"))
+penguins_raw <- read.csv(here("data","penguins_raw.csv"))
+
+#Penguins Cleaning function
+cleaning_penguin_columns <- function(raw_data){
+    print("removed empty columns and rows, cleaned column names, removed comments and delta columns, shortened penguin names and removed NAs from the dataset")
+  raw_data %>% 
+    select(-"Comments") %>%
+    select(-starts_with("Delta")) %>%
+    clean_names() %>%
+    na.omit() %>% 
+    remove_empty(c("rows","cols")) %>% 
+    mutate(species = case_when(species == "Adelie Penguin (Pygoscelis adeliae)" ~ "Adelie", species == "Chinstrap penguin (Pygoscelis antarctica)" ~ "Chinstrap",species == "Gentoo penguin (Pygoscelis papua)" ~ "Gentoo"))}
+penguins_clean <- cleaning_penguin_columns(penguins_raw)
+#Saving cleaned penguin data
+write.csv(penguins_clean, here("data","penguins_clean.csv"))
+
+
+#Graph showing how Culmen Length against Culmen Depth  for different species.
+#| fig-cap: fig 2.1 "Penguins in Morphospace"
+
+#Plot graph of all penguins in morphospace, colour has been tied to species, making the species different colours and thus making it easier to see the positive correlation between culmen depth and culmen length.
+ggplot(data = penguins_clean, aes(culmen_length_mm, culmen_depth_mm, col = species)) + geom_point(size = 2) + ylab('Culmen Depth (mm)') + xlab('Culmen Length (mm)')+ ggtitle('Culmen Length against Depth for Different Species') 
+
+```
+
+### Hypothesis
+
+Despite what the misleading graph above shows, I hypothesise that I will find a positive correlation between culmen length and depth within the chinstrap penguin. I believe that as a bird beak gets longer it will also get deeper. Null hypothesis H0: there is no correlation between Culmen Depth and Length in Chinstrap Penguins. Alternate Hypothesis H1: there is positive correlation between Culmen Depth and Length in Chinstrap Penguins.
+
+### Statistical Methods
+
+To carry out this analysis a Linear Regression model will be created to analyse the correlation between beak depth and length in Chinstrap Penguins. However, first, we must check wether the data violates any of the assumptions of a linear model, if so this analysis may not be appropriate or the data may have to be modified before an analysis may be undertaken. Here we tested for normality of the residuals and heteroscedasticity within the sample. The residuals were confirmed to be normal through a graphical test (histogram of residuals) shown in fig 2.2 and through a statistical test; a Shapiro test. Null hypothesis (H0) residuals are normally distributed, alternate hypothesis (H1), residuals are not normally distributed. p\>0.05 therefore we cannot reject the null hypothesis, and we have sufficient evidence to suggest that the residuals are normally distributed. (p= 0.5741). Homoscedasticity was confirmed through a graphical test (plot of variation) shown in fig 2.2 and a statistical test; a Breusch Pagan test. Null hypothesis (H0) heteroscedastity is not present, alternate hypothesis (H1) heteroscedastity is present. p\>0.05 therefore we cannot reject the null hypothesis, there is sufficient evidence to suggest that heteroscedasticity is not present in the sample. (p=1). We have tested for normality of residuals and homoscedasticity and found that both are present in the sample. The assumptions of a linear model have been met, we can proceed with the analysis.
+
+```{r Statistics, echo=TRUE}
+#| fig-cap: fig 2.2 "Testing for Normality in Residuals and heteroscedasticity"
+#First create seperate dataset for Gentoo Penguins
+chinstrap_clean <- filter(penguins_clean, species == "Chinstrap")
+
+#| label: Testing for Normality 
+#First of all we need to check wether the data is normally distributed and heteroscedastic for Gentoo penguins.
+#Graphical tests for normality, we first make a hisogram of the residuals
+#Create a linear model
+lmdepth <- lm(culmen_depth_mm ~ culmen_length_mm, data = chinstrap_clean)
+#Create variable redisuals
+residuals <- lmdepth$residuals
+#Create histogram of residuals to check wether residuals are normally distributed
+hist1 <- ggplot(data = chinstrap_clean, aes(x=residuals)) + geom_histogram(col = 'black', fill = 'blue') + ylab('Frequency') + xlab('Residuals') + geom_abline(slope = 0) + ggtitle('Distribution of Residuals')
+# Data appears normal but to check whether it is normally distributed perform a Shapiro-Wilk test. Null hypothesis (H0) residuals are normally distributed, alternate hypothesis (H1), residuals are not normally distributed
+shapiro.test(residuals)
+# p>0.05 therefore we cannot reject the null hypothesis, and we have sufficient evidence to suggest that the residuals are normally distributed
+#| label: Testing for Heteroscedasticity 
+#First we graphically test for Heteroscedasticity, plotting residuals against their position on the x axis
+varplot <- ggplot(data = chinstrap_clean, aes(y = residuals, x = culmen_length_mm)) + geom_point(col = 'blue') + geom_abline(slope = 0) + ylab('Residuals') + ggtitle('Variation of Residuals')
+#Heteroscedasticity does not seem to be present in the sample, there do not seem to be great differences in the variation of the residuals, but to confirm we can perform a Breusch-Pagan test. Null hypothesis (H0) heteroscedastity is not present, alternate hypothesis (H1) heteroscedastity is present.
+var.func <- lm(residuals ~ culmen_length_mm, data = chinstrap_clean)
+summary(var.func)
+# p>0.05 therefore we cannot reject the null hypothesis, there is sufficient evidence to suggest that heteroscedasticity is not present in the sample. The assumptions of a linear model have been met, we can proceed with the analysis.
+#Displaying both graphs in a single panel
+
+#Code to put the previous plots on a single panel, using the ggarrange function from ggpubr
+ggarrange(hist1, varplot, ncol = 2, nrow = 1)
+
+```
+
+### Results & Discussion
+
+Fot this linear regression we have null hypothesis (H0), there is no correlation between culmen depth and length in Chinstrap Penguins, Alternate Hypothesis there is correlation between culmen Depth and Length in Chinstrap Penguins. This linear regression produces p\<0.05, therefore at the 95% confidence interval we can reject the null hypothesis, we have sufficient evidence to suggest that a positive correlation is present between culmen depth and length in Chinstrap Penguins. As a Chinstrap Penguin's beak gets longer it gets deeper as well.
+
+This may have implications for the ecology of this species. If, as has been suggested beak size is correlated with the size of krill selected, then individuals of this species may select for different sizes of krill according to their beak size (Wilson 2010). This may also cause individual preferences in feeding depth if Krill do sort themselves according to their size.
+
+More research is needed to demonstrate the presence of individual niche partitioning within the species, and it is possible that other factors, like body size may play a more important role. Individual Penguins with a range of beak sizes should be tagged with depth recorders and then a linear regression should be performed checking for correlation between beak size and mean depth of dives. Nets should also be used to sample krill at different depths within the same sample and the average length of krill should be recorded at 5m intervals across the depths Chinstrap Penguins forage at. This research should be repeated across multiple days as krill abundance and size of individuals can be highly variable (Cade 2022). Then a linear regression should be performed to check for correlation between depth and krill length. This research should all be carried out at the same site as local factors can influence the depths of krill abundance and thus the depths of dives (Wilson 2010). If both of these provide significant correlations, then it could suggest that Chinstrap Penguins employ morphological niche partitioning, feeding at different depths and thus different sizes of krill according to their beak size.
+
+```{r Plotting Results, echo=TRUE}
+#| label: Linear Model
+#| fig_cap: "2.3 Linear Regression"
+
+#Carrying out the Linear Regression, null hypothesis (H0), there is no correlation between Culmen Depth and Length in Chinstrap Penguins, Alternate Hypothesis there is correlation between Culmen Depth and Length in Chinstrap Penguins.
+lmdepth <- lm(culmen_depth_mm ~ culmen_length_mm, data = chinstrap_clean)
+summary(lmdepth)
+
+#Plotting the Linear Model
+ggplot(data = chinstrap_clean, aes(culmen_length_mm, culmen_depth_mm)) + geom_point(size = 2, col = "green") + ylab('Culmen Depth (mm)') + xlab('Culmen Length (mm)')+ ggtitle('Culmen Length against Depth for Chinstrap Penguins') + geom_smooth(method = "lm")
+
+```
+
+### Conclusion
+
+We have found a positive correlation between culmen depth and culmen length within Chinstrap Penguins at the 95% significance level. As these Penguins have longer beaks they are likely to get deeper as well. This may have some implications on the Penguin's ecology, potentially indicating that individuals feed on different sizes of krill.
+
+### Bibliography
+
+Cade, David E, et al. “Evidence for Size-Selective Predation by Antarctic Humpback Whales.” Frontiers in Marine Science, vol. 9, 31 Jan. 2022,
+
+Hamner, William M., et al. “Behavior of Antarctic Krill, Euphausia Superba: Chemoreception, Feeding, Schooling, and Molting.” Science, vol. 220, no. 4595, 22 Apr. 1983, pp. 433–435,
+
+Sharma, Rahul, et al. “Existence of the Yule-Simpson Effect: An Experiment with Continuous Data.” 2022 12th International Conference on Cloud Computing, Data Science & Engineering (Confluence), vol. 95, 27 Jan. 2022, pp. 351–355, ieeexplore.ieee.org/abstract/document/9734211,
+
+Volkman, Nicholas J., et al. “Diets of Pygoscelid Penguins at King George Island, Antarctica.” The Condor, vol. 82, no. 4, Nov. 1980, p. 373,
+
+Wilson, Rory P. “Resource Partitioning and Niche Hyper-Volume Overlap in Free-Living Pygoscelid Penguins.” Functional Ecology, vol. 24, no. 3, 13 Oct. 2009, pp. 646–657
+
+## Question 3
+
+My github link
