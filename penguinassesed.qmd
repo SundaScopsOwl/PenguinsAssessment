@@ -136,7 +136,7 @@ summary(var.func)
 # p>0.05 therefore we cannot reject the null hypothesis, there is sufficient evidence to suggest that heteroscedasticity is not present in the sample. The assumptions of a linear model have been met, we can proceed with the analysis.
 #Displaying both graphs in a single panel
 
-#Code to put the previous plots on a single panel, using the ggarrange function from ggpubr
+#Code to put the previous plots on a single panel
 ggarrange(hist1, varplot, ncol = 2, nrow = 1)
 
 ```
